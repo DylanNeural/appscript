@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Envoi de 14 graphiques vers Apps Script</title>
+  <style>
+    .chart-block {
+      border: 1px solid #ccc;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Envoyer jusqu'à 14 graphiques en barres vers Google Sheets</h1>
+
+  <div id="chartsContainer"></div>
+
+  <button type="button" onclick="addChart()">+ Graphique</button>
+  <button type="button" onclick="sendCharts()">Envoyer vers Apps Script</button>
+
+  <!-- Formulaire fantôme -->
+  <form id="hiddenForm"
+        method="POST"
+        action="https://script.google.com/macros/s/AKfycbyV5dwcZGxkf-hPEZI1i48Hsp5UQndWJGXOejD0y28OLCd8QJRAA6Gu26g6rdVS_jXPpw/exec"
+        target="hidden_iframe">
+    <input type="hidden" name="payload" id="payloadInput">
+  </form>
+
+  <!-- Iframe caché pour éviter l'ouverture de page -->
+  <iframe name="hidden_iframe" style="display:none;"></iframe>
+
+  <script>
+    // Ajoute un bloc "graphique" avec quelques lignes par défaut
+    function addChart() {
+      const container = document.getElementById('chartsContainer');
+
+      const chartIndex = container.querySelectorAll('.chart-block').length + 1;
+
+      const block = document.createElement('div');
+      block.className = 'chart-block';
+
+      const titleLabel = document.createElement('label');
+      titleLabel.textContent = 'Titre du graphique ' + chartIndex + ' : ';
+
+      const titleInput = document.createElement('input');
+      titleInput.type = 'text';
+      titleInput.className = 'chart-title';
+      titleInput.value = 'Graphique ' + chartIndex;
+
+      const rowsDiv = document.createElement('div');
+      rowsDiv.className = 'rows';
+
+      // 3 lignes par défaut
+      for (let i = 0; i < 3; i++) {
+        rowsDiv.appendChild(createRow());
+      }
+
+      const addRowBtn = document.createElement('button');
+      addRowBtn.type = 'button';
+      addRowBtn.textContent = '+ Ligne';
+      addRowBtn.onclick = function() {
+        rowsDiv.appendChild(createRow());
+      };
+
+      block.appendChild(titleLabel);
+      block.appendChild(titleInput);
+      block.appendChild(document.createElement('br'));
+      block.appendChild(document.createElement('br'));
+      block.appendChild(rowsDiv);
+      block.appendChild(addRowBtn);
+
+      container.appendChild(block);
+    }
+
+    function createRow() {
+      const div = document.createElement('div');
+
+      const labelInput = document.createElement('input');
+      labelInput.type = 'text';
+      labelInput.className = 'label';
+      labelInput.placeholder = 'Label';
+
+      const valueInput = document.createElement('input');
+      valueInput.type = 'number';
+      valueInput.className = 'value';
+      valueInput.placeholder = 'Valeur';
+
+      div.appendChild(labelInput);
+      div.appendChild(valueInput);
+
+      return div;
+    }
+
+    function sendCharts() {
+      const chartBlocks = document.querySelectorAll('.chart-block');
+      const charts = [];
+
+      chartBlocks.forEach((block) => {
+        const title = block.querySelector('.chart-title').value || 'Graphique';
+
+        const labels = block.querySelectorAll('.label');
+        const values = block.querySelectorAll('.value');
+
+        const data = [];
+        for (let i = 0; i < labels.length; i++) {
+          const label = labels[i].value;
+          const value = Number(values[i].value);
+          if (label !== '' && !isNaN(value)) {
+            data.push({ label, value });
+          }
+        }
+
+        if (data.length > 0) {
+          charts.push({ title, data });
+        }
+      });
+
+      if (charts.length === 0) {
+        alert('Aucun graphique valide à envoyer.');
+        return;
+      }
+
+      // On limite à 14 graphiques max
+      const maxCharts = 14;
+      const chartsToSend = charts.slice(0, maxCharts);
+
+      const payload = {
+        charts: chartsToSend
+      };
+
+      document.getElementById('payloadInput').value = JSON.stringify(payload);
+      document.getElementById('hiddenForm').submit();
+
+      alert(chartsToSend.length + ' graphique(s) envoyé(s) à Apps Script.');
+    }
+
+    // Ajoute un premier graphique automatiquement
+    window.onload = () => {
+      addChart();
+    };
+  </script>
+</body>
+</html>
